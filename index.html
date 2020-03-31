@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Minecraft Tetris</title>
+    <style></style>
+</head>
+
+<body style="overflow:hidden; margin:0 ">
+    <canvas id="gameCanvas" style="border:10px;  solid #FFF555; " ></canvas>
+    <script>
+
+
+        // declare variables
+        const FPS = 30;
+        var canvas, context;
+
+        var img = document.createElement('img');
+        img.src = './test.png';
+
+
+        // load canvas
+        canvas = document.getElementById("gameCanvas");
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+        context = canvas.getContext("2d");
+
+
+
+      //  function draw_block(id, pos)
+
+
+
+
+
+
+
+
+        function Point(x, y) {
+          this.x = x;
+          this.y = y;
+        }
+
+
+
+
+
+
+
+          // set up interval (game loop)
+          setInterval(update, 1000 / FPS);
+          function update() {
+
+        //  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+
+          context.fillStyle = '#F00000';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+
+
+    //      context.drawImage(img, 0, 0)
+                    context.drawImage(img, 0, 0, 32, 32, 0, 0, 32, 32)
+
+
+          }
+
+
+
+
+
+
+          document.addEventListener('mousemove', function(event){
+
+          let a = event.clientY / canvas.height;
+
+          console.log(a)
+          if (a > 1){ a = 1};
+
+
+
+          tree.angle = 2 * Math.PI * a;
+
+
+
+
+
+
+          }, true);
+
+
+          document.addEventListener('keydown', function(event){
+            if (event.keyCode == 37 && tree.ratio < 1) {
+                tree.ratio += 0.01
+
+            }
+            else if (event.keyCode == 39) {
+                      tree.ratio -= 0.01
+
+            }
+            else if (event.keyCode == 38) {
+                  tree.depth++;
+            }
+            else if (event.keyCode == 40 && tree.depth > 1) {
+                tree.depth--;
+            }
+
+          }, true);
+
+
+
+    </script>
+</body>
+
+</html>
