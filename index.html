@@ -9,38 +9,129 @@
 </head>
 
 <body style="overflow:hidden; margin:0 ">
-    <canvas id="gameCanvas" style="border:10px;  solid #FFF555; " ></canvas>
+    <canvas id="gameCanvas"></canvas>
     <script>
 
 
-        // declare variables
         const FPS = 30;
+        var block_size = 50;
+
         var canvas, context;
-
-        var img = document.createElement('img');
-        img.src = './test.png';
-
-
-        // load canvas
         canvas = document.getElementById("gameCanvas");
         canvas.width  = window.innerWidth;
         canvas.height = window.innerHeight;
         context = canvas.getContext("2d");
 
+        function Init_world(){
+          let w = Math.ceil(canvas.width / block_size);
+          let h = Math.ceil(canvas.height / block_size);
+          this.w = w;
+          this.h = h;
+          this.size = block_size;
+          this.x_offset = Math.ceil(canvas.width - w * block_size);
+          this.y_offset = undefined;
+          this.map = new Array(h * w).fill(0);
+
+          for (let i = 0; i < h; i++){
+            this.map[0 + i * w] = 1;
+            this.map[(w - 1) + i * w] = 1;
+          }
+          for (let i = 0; i < w; i++){
+            this.map[w * (h - 1) + i] = 1;
+          }
+          this.log = function(){
+              for (let i = 0; i < h; i++){
+                  console.log(this.map.slice(i * w, i * w + w))
+              }
+          }
+          this.render = function(){
+            for (i in this.map){
+                draw(tilemap.texture[this.map[i]], i);
+            }
+          }
+        }
+
+        function Texture(n, w){
+          this.x = (n % w) * block_size;
+          this.y = Math.floor(n / w) * block_size;
+        }
+
+        function Init_tilemap(){
+            this.img = document.createElement('img');
+            this.img.src = './tilemap.png';
+            this.img.parent = this;
+            this.img.onload = function(){
+                this.parent.w = Math.round(this.width / block_size);
+                this.parent.h = Math.round(this.height / block_size);
+                this.parent.texture = new Array();
+                for (let n = 0; n < (this.parent.w * this.parent.h); n++){
+                    this.parent.texture.push(new Texture(n, this.parent.w))
+                }
+            }
+        }
+
+        function draw(texture, pos){
+            let x = (pos % world.w) * block_size;
+            let y = Math.floor(pos / world.w) * block_size;
+
+            context.drawImage(tilemap.img, texture.x, texture.y, block_size, block_size, x, y, block_size, block_size)
+        }
 
 
-      //  function draw_block(id, pos)
 
 
+        var world = new Init_world();
+        var tilemap = new Init_tilemap();
 
 
+        var click = 0;
+        document.addEventListener('click', function(event){
+            if (click){click = 0;}
+            else{click = 1;}
+            console.log(event.clientX, event.clientY)
 
 
+        }, true);
+
+        document.addEventListener('mousemove', function(event){
 
 
-        function Point(x, y) {
-          this.x = x;
-          this.y = y;
+            if (click){
+            let x = Math.floor(event.clientX / block_size);
+            let y = Math.floor(event.clientY / block_size);
+        //   console.log('x=', x, 'y=',  y)
+
+        //    console.log(world.map[world.w * y + x])
+            if (world.map[world.w * (y - 1) + x] == 2 || world.map[world.w * (y - 1) + x] == 3){
+                world.map[world.w * y + x] = 3;
+            }
+            else{
+            world.map[world.w * y + x] = 2;}
+        }
+        }, true);
+
+        document.addEventListener('keydown', function(event){
+          if (event.keyCode == 37) {}
+          else if (event.keyCode == 39) {}
+          else if (event.keyCode == 38) {}
+          else if (event.keyCode == 40) {}
+        }, true);
+
+
+          // set up interval (game loop)
+          setInterval(update, 1000 / FPS);
+
+          function update() {
+
+//            console.log(tilemap.img.width)
+
+
+          context.fillStyle = '#F00000';
+
+          context.fillRect(0, 0, canvas.width, canvas.height);
+                    world.render()
+
+      //    for (let i = 0; i < 5; i ++){
         }
 
 
@@ -49,63 +140,7 @@
 
 
 
-          // set up interval (game loop)
-          setInterval(update, 1000 / FPS);
-          function update() {
 
-        //  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-
-          context.fillStyle = '#F00000';
-          context.fillRect(0, 0, canvas.width, canvas.height);
-
-
-    //      context.drawImage(img, 0, 0)
-                    context.drawImage(img, 0, 0, 32, 32, 0, 0, 32, 32)
-
-
-          }
-
-
-
-
-
-
-          document.addEventListener('mousemove', function(event){
-
-          let a = event.clientY / canvas.height;
-
-          console.log(a)
-          if (a > 1){ a = 1};
-
-
-
-          tree.angle = 2 * Math.PI * a;
-
-
-
-
-
-
-          }, true);
-
-
-          document.addEventListener('keydown', function(event){
-            if (event.keyCode == 37 && tree.ratio < 1) {
-                tree.ratio += 0.01
-
-            }
-            else if (event.keyCode == 39) {
-                      tree.ratio -= 0.01
-
-            }
-            else if (event.keyCode == 38) {
-                  tree.depth++;
-            }
-            else if (event.keyCode == 40 && tree.depth > 1) {
-                tree.depth--;
-            }
-
-          }, true);
 
 
 
