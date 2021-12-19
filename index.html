@@ -40,6 +40,8 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 context = canvas.getContext("2d");
 
+//enforce at least 3 width
+
 var world = new Init_world();
 var tilemap = new Init_tilemap();
 
@@ -82,72 +84,51 @@ function Init_world() {
             draw_pos(tilemap.texture[this.map[i]], i);
         }
     }
-    this.grass = function() {
-        let grass;
-        let pos;
-        for (let x = 1; x < world.w; x++) {
-            grass = 0;
-            for (let y = 0; y < world.h; y++) {
-                pos = y * world.w + x;
-                if (world.map[pos] > 1 && grass == 1) {
-                    world.map[pos] = 3;
-                }
-                if (world.map[pos] == 3 && grass == 0) {
-                    world.map[pos] = 2;
-                }
-                if (world.map[pos] == 2) {
-                    grass = 1;
-                }
-            }
-        }
-    }
-
+   
+//######################################
+//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################
+//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################
+//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################
+//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################
+//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################//######################################
 
     this.calculate = function() {
         
-        let pos;
-        
-        
         for (let x = 1; x < world.w; x++) {
             
-            let depth = 0;
             let shifted = 0;
+            let prev_depth = 0;
+            let depth = 0;
+            
             for (let y = 0; y < world.h; y++) {
-                pos = y * world.w + x;
+                let pos = y * world.w + x;
                 let block = world.map[pos]
 
-                if (world.map[pos] > BEDROCK) {
+                if (block > BEDROCK) {
                     depth++;
                 }
-                
-                if (depth < 3 && block > BEDROCK) {
-                    world.map[pos] = DIRT
+
+                if (block == GRASS && world.map[pos - world.w] != AIR) {
+                    block = DIRT
                 }
 
-                // apply grass looking if top row of air above
-                if (block > BEDROCK &&
+                // // apply grass looking if top row of air above
+                if (block == DIRT &&
                     (world.map[pos - world.w] == AIR || pos < world.w )) {
-                    world.map[pos] = GRASS
-                }
-                if (depth >= 3 && block > BEDROCK) {
-                    world.map[pos] = STONE
-                }
-
-                if (depth) {
-
-                }
-
-                //if ore, report it up one block
-                if (block > STONE) {
-                    world.map[pos - world.w] = block
+                    block = GRASS
                 }
                 
 
+                    
                 
 
-                
+                world.map[pos] = block
+                previous_depth = depth    
             }
+            
+            // console.log("shifted:", shifted)
         }
+        // console.log("^^^^^^^^^^^^^\n\n\n\n")
     }
 }
 
@@ -160,14 +141,9 @@ function roll_ore(depth) {
     rarity = 0.3
     step = world.h / (l + 1)
 
-    // console.log("step:", step, "depth = ", depth)
-
     for (let i of ores.keys()) {
-        console.log("condition:", (i + 2) * step)
         if (depth > (i + 1) * step){
-            console.log(Math.random())
             if (Math.random() < rarity) {
-                console.log("returning:", ores[i])
                 return ores[i]
             }
         }
@@ -453,6 +429,16 @@ document.addEventListener('keydown', function(event) {
     else if (event.keyCode == 101) {current_piece = Object.assign({}, get_template(4))}
     else if (event.keyCode == 102) {current_piece = Object.assign({}, get_template(5))}
     else if (event.keyCode == 103) {current_piece = Object.assign({}, get_template(6))}
+    else if (event.keyCode == 80) {
+        if (pause == true) { pause = false; console.log("unpause") } else {console.log("pause"); pause = true}
+    }
+    else if (event.keyCode == 13) {
+        place_in_world(current_piece)
+        world.need_update = 1;
+    }
+    else if (event.keyCode == 82) {
+        restart()
+    }
     else {
         console.log(event.keyCode, "was pressed")
     }
@@ -467,6 +453,7 @@ setInterval(update, 1000 / FPS);
 setTimeout(gametick_update, 1000 / gametick);
 
 function restart(){
+    current_piece = Object.assign({}, get_template(0));
     world = new Init_world()
     world.need_update = 1;
 }
@@ -477,23 +464,26 @@ function game_over(){
     restart()
 }
 
+var pause = false
+
 function gametick_update() {
 
     
+    if (pause == false){
+        draw_piece_texture(current_piece, tilemap.texture[0])
 
-    draw_piece_texture(current_piece, tilemap.texture[0])
+        if (collision(current_piece)) {
+            game_over()
+        }
+        if (!collision(move_down(current_piece))) {
+            current_piece.y++;
+        } else {
 
-    if (collision(current_piece)) {
-        game_over()
+            place_in_world(current_piece);
+            world.need_update = 1;
+        }
+        draw_piece_texture(current_piece, tilemap.texture[3])
     }
-    if (!collision(move_down(current_piece))) {
-        current_piece.y++;
-    } else {
-
-        place_in_world(current_piece);
-        world.need_update = 1;
-    }
-    draw_piece_texture(current_piece, tilemap.texture[3])
     setTimeout(gametick_update, 1000 / gametick);
 }
 
