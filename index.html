@@ -12,415 +12,504 @@
     <canvas id="gameCanvas"></canvas>
     <script>
 
+const AIR = 0
+const BEDROCK = 1
+const GRASS = 2
+const DIRT = 3
+const STONE = 4
+const COAL = 5
+const IRON = 6
+const GOLD = 7
+const REDSTONE = 8
+const DIAMOND = 9
+const TNT = 10
+const SAND = 11
 
-        const FPS = 30;
-        var gametick = 1;
-        var block_size = 50;
-        var piece_texture = 3;
-        var bag = [];
-        var score = 0;
 
-        var canvas, context;
-        canvas = document.getElementById("gameCanvas");
-        canvas.width  = window.innerWidth;
-        canvas.height = window.innerHeight;
-        context = canvas.getContext("2d");
 
-        var world = new Init_world();
-        var tilemap = new Init_tilemap();
+const FPS = 30;
+var gametick = 1;
+var block_size = 50;
+var piece_texture = 3;
+var bag = [];
+var score = 0;
 
-        function draw_pos(texture, pos){
-            let x = (pos % world.w) * block_size;
-            let y = Math.floor(pos / world.w) * block_size;
-            context.drawImage(tilemap.img, texture.x, texture.y, block_size, block_size, x + world.x_offset, y, block_size, block_size)
+var canvas, context;
+canvas = document.getElementById("gameCanvas");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+context = canvas.getContext("2d");
+
+var world = new Init_world();
+var tilemap = new Init_tilemap();
+
+function text_display(message, x, y){
+    
+    context.font = "30px Arial";
+    context.fillText(message, x, y);
+}
+
+function draw_pos(texture, pos) {
+    let x = (pos % world.w) * block_size;
+    let y = Math.floor(pos / world.w) * block_size;
+    context.drawImage(tilemap.img, texture.x, texture.y, block_size, block_size, x + world.x_offset, y, block_size, block_size)
+}
+
+function draw_coords(texture, x, y) {
+    context.drawImage(tilemap.img, texture.x, texture.y, block_size, block_size, x + world.x_offset, y, block_size, block_size)
+}
+
+function Init_world() {
+    let w = Math.ceil(canvas.width / block_size);
+    let h = Math.ceil(canvas.height / block_size);
+    this.w = w;
+    this.h = h;
+    this.size = block_size;
+    this.x_offset = Math.ceil((Math.ceil(canvas.width - w * block_size)) / 2);
+    this.map = new Array(h * w).fill(0);
+    this.need_update = 0;
+
+    for (let i = 0; i < h; i++) {
+        this.map[0 + i * w] = 1;
+        this.map[(w - 1) + i * w] = 1;
+    }
+    for (let i = 0; i < w; i++) {
+        this.map[w * (h - 1) + i] = 1;
+    }
+
+    this.render = function() {
+        for (i in this.map) {
+            draw_pos(tilemap.texture[this.map[i]], i);
         }
-
-        function draw_coords(texture, x, y){
-            context.drawImage(tilemap.img, texture.x, texture.y, block_size, block_size, x + world.x_offset, y, block_size, block_size)
-        }
-
-        function Init_world(){
-          let w = Math.ceil(canvas.width / block_size);
-          let h = Math.ceil(canvas.height / block_size);
-          this.w = w;
-          this.h = h;
-          this.size = block_size;
-          this.x_offset = Math.ceil((Math.ceil(canvas.width - w * block_size)) / 2);
-          this.map = new Array(h * w).fill(0);
-          this.need_update = 0;
-
-          for (let i = 0; i < h; i++){
-            this.map[0 + i * w] = 1;
-            this.map[(w - 1) + i * w] = 1;
-          }
-          for (let i = 0; i < w; i++){
-            this.map[w * (h - 1) + i] = 1;
-          }
-          this.log = function(){
-              for (let i = 0; i < h; i++){
-                  console.log(this.map.slice(i * w, i * w + w))
-              }
-          }
-          this.render = function(){
-              for (i in this.map){
-                  draw_pos(tilemap.texture[this.map[i]], i);
-              }
-          }
-          this.grass = function(){
-              let grass;
-              let pos;
-              for (let x = 1; x < world.w; x++){
-                  grass = 0;
-                  for (let y = 0; y < world.h; y++){
-                      pos = y * world.w + x;
-                      if (world.map[pos] > 1 && grass == 1){
-                          world.map[pos] = 3;
-                      }
-                      if (world.map[pos] == 3 && grass == 0){
-                          world.map[pos] = 2;
-                      }
-                      if (world.map[pos] == 2){
-                          grass = 1;
-                      }
-                  }
-              }
-          }
-
-          this.stone = function(){
-              let dirt;
-              let pos;
-              for (let x = 1; x < world.w; x++){
-                  dirt = 0;
-                  for (let y = 0; y < world.h; y++){
-                      pos = y * world.w + x;
-                      if (dirt >= 2 && world.map[pos] > 1){
-                          world.map[pos] = 4
-                      }
-                      if (world.map[pos] == 3){
-                          dirt ++;
-                      }
-
-
-                  }
-              }
-          }
-        }
-
-        function get_line(n){
-            return world.map.slice(world.w * n + 1, world.w + world.w * n - 1)
-        }
-
-        function remove_full_lines(){
-            for (let i = world.h - 1; i >= 0; i--){
-                if (get_line(i).every(elem => elem > 1)){
-                    copy_down(i)
-                    i = world.h - 1;
+    }
+    this.grass = function() {
+        let grass;
+        let pos;
+        for (let x = 1; x < world.w; x++) {
+            grass = 0;
+            for (let y = 0; y < world.h; y++) {
+                pos = y * world.w + x;
+                if (world.map[pos] > 1 && grass == 1) {
+                    world.map[pos] = 3;
+                }
+                if (world.map[pos] == 3 && grass == 0) {
+                    world.map[pos] = 2;
+                }
+                if (world.map[pos] == 2) {
+                    grass = 1;
                 }
             }
         }
+    }
 
-        function copy_down(line){
-            let start = world.w * (line - 1) - 1;
-            let to = world.w * (line + 1) - 1;
-            let worldmap_copy = Object.assign([], world.map)
 
-            for (let i = to; i >= world.w; i--){
-                worldmap_copy[i] = world.map[i - world.w];
-            }
-            world.map = worldmap_copy;
-            world.need_update = 1;
-            }
+    this.calculate = function() {
+        
+        let pos;
+        
+        
+        for (let x = 1; x < world.w; x++) {
+            
+            let depth = 0;
+            let shifted = 0;
+            for (let y = 0; y < world.h; y++) {
+                pos = y * world.w + x;
+                let block = world.map[pos]
 
-        function Texture(n, w){
-          this.x = (n % w) * block_size;
-          this.y = Math.floor(n / w) * block_size;
-        }
-
-        function Init_tilemap(){
-            this.img = document.createElement('img');
-            this.img.src = './tilemap.png';
-            this.init = 0;
-            this.img.parent = this;
-            this.img.onload = function(){
-                this.parent.w = Math.round(this.width / block_size);
-                this.parent.h = Math.round(this.height / block_size);
-                this.parent.texture = new Array();
-                for (let n = 0; n < (this.parent.w * this.parent.h); n++){
-                    this.parent.texture.push(new Texture(n, this.parent.w))
+                if (world.map[pos] > BEDROCK) {
+                    depth++;
                 }
-                this.parent.init = 1;
-                world.need_update = 1;
-            }
-        }
-
-        function draw_piece_texture(piece, tex){
-            for (i in piece.maps[piece.current_rot]){
-                let x = piece.x + (i % piece.w);
-                let y = piece.y + Math.floor(i / piece.w);
-                let pos = x + y * world.w
-                if (piece.maps[piece.current_rot][i] == 1){
-                    draw_pos(tex, pos)
+                
+                if (depth < 3 && block > BEDROCK) {
+                    world.map[pos] = DIRT
                 }
-            }
-        }
 
-        function collision(piece){
-            for (i in  piece.maps[piece.current_rot]){
-                let x = piece.x + (i % piece.w);
-                let y = piece.y + Math.floor(i / piece.w);
-                let pos = x + y * world.w;
-                if (piece.maps[piece.current_rot][i] == 1 && world.map[pos]){
-                    return 1;
+                // apply grass looking if top row of air above
+                if (block > BEDROCK &&
+                    (world.map[pos - world.w] == AIR || pos < world.w )) {
+                    world.map[pos] = GRASS
                 }
-            }
-            return 0;
-        }
-
-        function get_template(template){
-            let created_piece;
-            switch (template){
-                case 0: //cube
-                created_piece =
-                {
-                    h: '2',
-                    w: '2',
-                    x: Math.floor((world.w - 2) / 2),
-                    y: 0,
-                    rots: 0,
-                    current_rot: 0,
-                    maps: new Array([1, 1, 1, 1]),
-                    special: 0
-                };
-                break;
-                case 1: //barre
-                created_piece = {
-                   h: '4',
-                   w: '4',
-                   x: Math.floor((world.w - 1) / 2 - 2),
-                   y: -1,
-                   rots: 1,
-                   current_rot: 0,
-                   maps: new Array([0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0]),
-                   special: 0
-               }
-                break;
-                case 2: //tee
-                created_piece = {
-                    h: '3',
-                    w: '3',
-                    x: Math.floor((world.w - 2)  / 2),
-                    y: -1,
-                    rots: 3,
-                    current_rot: 0,
-                    maps: new Array([0, 0, 0, 1, 1, 1, 0, 1, 0], [0, 1, 0, 1, 1, 0, 0, 1, 0],
-                         [0, 1, 0, 1, 1, 1, 0, 0, 0], [0, 1, 0, 0, 1, 1, 0, 1, 0]),
-                    special: 0
+                if (depth >= 3 && block > BEDROCK) {
+                    world.map[pos] = STONE
                 }
-                break;
-                case 3: //L
-                created_piece = {
-                    h: '3',
-                    w: '3',
-                    x: Math.floor((world.w - 2)  / 2),
-                    y: 0,
-                    rots: 3,
-                    current_rot: 0,
-                    maps: new Array([0,0,0,1,1,1,0,0,1],[0,0,1,0,0,1,0,1,1],[1,0,0,1,1,1,0,0,0],[0,1,1,0,1,0,0,1,0]),
-                    special: 0
+
+                if (depth) {
+
                 }
-                break;
-                case 4: //J
-                created_piece = {
-                    h: '3',
-                    w: '3',
-                    x: Math.floor((world.w - 2)  / 2),
-                    y: 0,
-                    rots: 3,
-                    current_rot: 0,
-                    maps: new Array([0,0,0,1,1,1,1,0,0],[0,1,1,0,0,1,0,0,1],[0,0,1,1,1,1,0,0,0],[0,1,0,0,1,0,0,1,1]),
-                    special: 0
+
+                //if ore, report it up one block
+                if (block > STONE) {
+                    world.map[pos - world.w] = block
                 }
-                break;
-                case 5: //Z
-                created_piece = {
-                    h: '3',
-                    w: '3',
-                    x: Math.floor((world.w - 2)  / 2),
-                    y: -1,
-                    rots: 1,
-                    current_rot: 0,
-                    maps: new Array([0,0,0,1,1,0,0,1,1],[0,0,1,0,1,1,0,1,0]),
-                    special: 0
-                }
-                break;
-                case 6: //S
-                created_piece = {
-                    h: '3',
-                    w: '3',
-                    x: Math.floor((world.w - 2)  / 2),
-                    y: -1,
-                    rots: 1,
-                    current_rot: 0,
-                    maps: new Array([0,0,0,0,1,1,1,1,0],[1,0,0,1,1,0,0,1,0]),
-                    special: 0
-                }
-                break;
-            }
-            return created_piece
-        }
+                
 
-        function shuffle_bag() {
-            let new_bag = [0, 1, 2, 3, 4, 5, 6];
-            let j, x, i;
-            for (i = new_bag.length - 1; i > 0; i--) {
-                j = Math.floor(Math.random() * (i + 1));
-                x = new_bag[i];
-                new_bag[i] = new_bag[j];
-                new_bag[j] = x;
-            }
-            return new_bag;
-        }
+                
 
-        function next_piece(){
-            if (bag.length == 0){
-                console.log('repopulate')
-                bag = Object.assign([], shuffle_bag());
-            }
-            return bag.pop();
-        }
-
-        function rotate(piece, direction){
-            let moved_piece = Object.assign({}, piece);
-            if (direction){
-                if (moved_piece.current_rot < moved_piece.rots){
-                    moved_piece.current_rot ++;
-                }
-                else {
-                    moved_piece.current_rot = 0;
-                }
-                return moved_piece;}
-            else{
-                if (moved_piece.current_rot > 0){
-                    moved_piece.current_rot --;
-                }
-                else {
-                    moved_piece.current_rot = moved_piece.rots;
-                }
-            }
-            return moved_piece;
-        }
-
-        function move_down(piece){
-            let moved_piece = Object.assign({}, piece);
-            moved_piece.y++;
-            return moved_piece;
-        }
-
-        function move_up(piece){
-            let moved_piece = Object.assign({}, piece);
-            moved_piece.y--;
-            return moved_piece;
-        }
-
-        function move_left(piece){
-            let moved_piece = Object.assign({}, piece);
-            moved_piece.x--;
-            return moved_piece;
-        }
-
-        function move_right(piece){
-            let moved_piece = Object.assign({}, piece);
-            moved_piece.x++;
-            return moved_piece;
-        }
-
-        function place_in_world(piece){
-            for (i in  piece.maps[piece.current_rot]){
-                let x = piece.x + (i % piece.w);
-                let y = piece.y + Math.floor(i / piece.w);
-                let pos = x + y * world.w;
-                if (piece.maps[piece.current_rot][i] == 1){
-                    console.log('write')
-                    world.map[pos] = piece_texture;
-                }
-            }
-            current_piece = Object.assign({}, get_template(next_piece()));
-            remove_full_lines();
-            return 0;
-        }
-
-        document.addEventListener('click', function(event){
-            world.need_update = 1;
-        }, true);
-        document.addEventListener('mousemove', function(event){
-        }, true);
-        document.addEventListener('keydown', function(event){
-        draw_piece_texture(current_piece, tilemap.texture[0])
-          if (event.keyCode == 37) {
-              if (! collision(move_left(current_piece))){
-              current_piece.x --;}
-          }
-          else if (event.keyCode == 39) {
-              if (! collision(move_right(current_piece))){
-              current_piece.x ++;}
-          }
-          else if (event.keyCode == 40) {
-              if (! collision(move_down(current_piece))){
-              current_piece.y ++;}
-          }
-          else if (event.keyCode == 38) {
-              if (! collision(rotate(current_piece, 0))){
-                  current_piece = rotate(current_piece, 0)
-              }
-          }
-          else if (event.keyCode == 32) {
-              while (! collision(move_down(current_piece))){
-              current_piece.y ++;}
-              place_in_world(current_piece)
-              world.need_update = 1;
-          }
-          else if (event.keyCode == 82){
-          }
-
-          draw_piece_texture(current_piece, tilemap.texture[3])
-        }, true);
-
-        var next_piece;
-        var current_piece = Object.assign({}, get_template(6));
-
-
-        var piece_texture;
-
-          setInterval(update, 1000 / FPS);
-          setTimeout(gametick_update, 1000 / gametick);
-
-          function gametick_update(){
-
-              draw_piece_texture(current_piece, tilemap.texture[0])
-              if (! collision(move_down(current_piece))){
-              current_piece.y ++;}
-              else {
-
-                  place_in_world(current_piece);
-                  world.need_update = 1;
-              }
-            draw_piece_texture(current_piece, tilemap.texture[3])
-              setTimeout(gametick_update, 1000 / gametick);
-          }
-
-          function update() {
-            if (tilemap.init){
-            draw_piece_texture(current_piece, tilemap.texture[3])
-            }
-            if (world.need_update == 1){
-                world.grass();
-                world.stone();
-        //        world.ores();
-                world.render();
-                world.need_update = 0;
+                
             }
         }
+    }
+}
+
+function roll_ore(depth) {
+
+    ores = [ 5, 6, 7, 8, 9]
+    
+    l = ores.length
+
+    rarity = 0.3
+    step = world.h / (l + 1)
+
+    // console.log("step:", step, "depth = ", depth)
+
+    for (let i of ores.keys()) {
+        console.log("condition:", (i + 2) * step)
+        if (depth > (i + 1) * step){
+            console.log(Math.random())
+            if (Math.random() < rarity) {
+                console.log("returning:", ores[i])
+                return ores[i]
+            }
+        }
+    }
+    return 4
+}
+
+function get_line(n) {
+    return world.map.slice(world.w * n + 1, world.w + world.w * n - 1)
+}
+
+function remove_full_lines() {
+    for (let i = world.h - 1; i >= 0; i--) {
+        if (get_line(i).every(elem => elem > 1)) {
+            copy_down(i)
+            i = world.h - 1;
+        }
+    }
+}
+
+function copy_down(line) {
+    let start = world.w * (line - 1) - 1;
+    let to = world.w * (line + 1) - 1;
+    let worldmap_copy = Object.assign([], world.map)
+
+    for (let i = to; i >= world.w; i--) {     
+        worldmap_copy[i] = world.map[i - world.w];
+    }
+    world.map = worldmap_copy;
+    world.need_update = 1;
+}
+
+function Texture(n, w) {
+    this.x = (n % w) * block_size;
+    this.y = Math.floor(n / w) * block_size;
+}
+
+function Init_tilemap() {
+    this.img = document.createElement('img');
+    this.img.src = './tilemap.png';
+    this.init = 0;
+    this.img.parent = this;
+    this.img.onload = function() {
+        this.parent.w = Math.round(this.width / block_size);
+        this.parent.h = Math.round(this.height / block_size);
+        this.parent.texture = new Array();
+        for (let n = 0; n < (this.parent.w * this.parent.h); n++) {
+            this.parent.texture.push(new Texture(n, this.parent.w))
+        }
+        this.parent.init = 1;
+        world.need_update = 1;
+    }
+}
+
+function draw_piece_texture(piece, tex) {
+    for (i in piece.maps[piece.current_rot]) {
+        let x = piece.x + (i % piece.w);
+        let y = piece.y + Math.floor(i / piece.w);
+        let pos = x + y * world.w
+        if (piece.maps[piece.current_rot][i] == 1) {
+            draw_pos(tex, pos)
+        }
+    }
+}
+
+function collision(piece) {
+    for (i in piece.maps[piece.current_rot]) {
+        let x = piece.x + (i % piece.w);
+        let y = piece.y + Math.floor(i / piece.w);
+        let pos = x + y * world.w;
+        if (piece.maps[piece.current_rot][i] == 1 && world.map[pos]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+function get_template(template) {
+    let created_piece;
+    switch (template) {
+        case 0: //cube
+            created_piece = {
+                h: '2',
+                w: '2',
+                x: Math.floor((world.w - 2) / 2),
+                y: 0,
+                rots: 0,
+                current_rot: 0,
+                maps: new Array([1, 1, 1, 1]),
+                special: 0
+            };
+            break;
+        case 1: //barre
+            created_piece = {
+                h: '4',
+                w: '4',
+                x: Math.floor((world.w - 1) / 2 - 2),
+                y: -1,
+                rots: 1,
+                current_rot: 0,
+                maps: new Array([0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0]),
+                special: 0
+            }
+            break;
+        case 2: //tee
+            created_piece = {
+                h: '3',
+                w: '3',
+                x: Math.floor((world.w - 2) / 2),
+                y: -1,
+                rots: 3,
+                current_rot: 0,
+                maps: new Array([0, 0, 0, 1, 1, 1, 0, 1, 0], [0, 1, 0, 1, 1, 0, 0, 1, 0],
+                    [0, 1, 0, 1, 1, 1, 0, 0, 0], [0, 1, 0, 0, 1, 1, 0, 1, 0]),
+                special: 0
+            }
+            break;
+        case 3: //L
+            created_piece = {
+                h: '3',
+                w: '3',
+                x: Math.floor((world.w - 2) / 2),
+                y: 0,
+                rots: 3,
+                current_rot: 0,
+                maps: new Array([0, 0, 0, 1, 1, 1, 0, 0, 1], [0, 0, 1, 0, 0, 1, 0, 1, 1], [1, 0, 0, 1, 1, 1, 0, 0, 0], [0, 1, 1, 0, 1, 0, 0, 1, 0]),
+                special: 0
+            }
+            break;
+        case 4: //J
+            created_piece = {
+                h: '3',
+                w: '3',
+                x: Math.floor((world.w - 2) / 2),
+                y: 0,
+                rots: 3,
+                current_rot: 0,
+                maps: new Array([0, 0, 0, 1, 1, 1, 1, 0, 0], [0, 1, 1, 0, 0, 1, 0, 0, 1], [0, 0, 1, 1, 1, 1, 0, 0, 0], [0, 1, 0, 0, 1, 0, 0, 1, 1]),
+                special: 0
+            }
+            break;
+        case 5: //Z
+            created_piece = {
+                h: '3',
+                w: '3',
+                x: Math.floor((world.w - 2) / 2),
+                y: -1,
+                rots: 1,
+                current_rot: 0,
+                maps: new Array([0, 0, 0, 1, 1, 0, 0, 1, 1], [0, 0, 1, 0, 1, 1, 0, 1, 0]),
+                special: 0
+            }
+            break;
+        case 6: //S
+            created_piece = {
+                h: '3',
+                w: '3',
+                x: Math.floor((world.w - 2) / 2),
+                y: -1,
+                rots: 1,
+                current_rot: 0,
+                maps: new Array([0, 0, 0, 0, 1, 1, 1, 1, 0], [1, 0, 0, 1, 1, 0, 0, 1, 0]),
+                special: 0
+            }
+            break;
+    }
+    return created_piece
+}
+
+function shuffle_bag() {
+    let new_bag = [0, 1, 2, 3, 4, 5, 6];
+    let j, x, i;
+    for (i = new_bag.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = new_bag[i];
+        new_bag[i] = new_bag[j];
+        new_bag[j] = x;
+    }
+    return new_bag;
+}
+
+function next_piece() {
+    if (bag.length == 0) {
+        bag = Object.assign([], shuffle_bag());
+    }
+    return bag.pop();
+}
+
+function rotate(piece, direction) {
+    let moved_piece = Object.assign({}, piece);
+    if (direction) {
+        if (moved_piece.current_rot < moved_piece.rots) {
+            moved_piece.current_rot++;
+        } else {
+            moved_piece.current_rot = 0;
+        }
+        return moved_piece;
+    } else {
+        if (moved_piece.current_rot > 0) {
+            moved_piece.current_rot--;
+        } else {
+            moved_piece.current_rot = moved_piece.rots;
+        }
+    }
+    return moved_piece;
+}
+
+function move_down(piece) {
+    let moved_piece = Object.assign({}, piece);
+    moved_piece.y++;
+    return moved_piece;
+}
+
+function move_up(piece) {
+    let moved_piece = Object.assign({}, piece);
+    moved_piece.y--;
+    return moved_piece;
+}
+
+function move_left(piece) {
+    let moved_piece = Object.assign({}, piece);
+    moved_piece.x--;
+    return moved_piece;
+}
+
+function move_right(piece) {
+    let moved_piece = Object.assign({}, piece);
+    moved_piece.x++;
+    return moved_piece;
+}
+
+function place_in_world(piece) {
+    for (i in piece.maps[piece.current_rot]) {
+        let x = piece.x + (i % piece.w);
+        let y = piece.y + Math.floor(i / piece.w);
+        let pos = x + y * world.w;
+        if (piece.maps[piece.current_rot][i] == 1) {
+            world.map[pos] = piece_texture;
+        }
+    }
+    current_piece = Object.assign({}, get_template(next_piece()));
+    remove_full_lines();
+    return 0;
+}
+
+document.addEventListener('click', function(event) {
+    world.need_update = 1;
+}, true);
+document.addEventListener('mousemove', function(event) {}, true);
+document.addEventListener('keydown', function(event) {
+    draw_piece_texture(current_piece, tilemap.texture[0])
+    if (event.keyCode == 37) {
+        if (!collision(move_left(current_piece))) {
+            current_piece.x--;
+        }
+    } else if (event.keyCode == 39) {
+        if (!collision(move_right(current_piece))) {
+            current_piece.x++;
+        }
+    } else if (event.keyCode == 40) {
+        if (!collision(move_down(current_piece))) {
+            current_piece.y++;
+        }
+    } else if (event.keyCode == 38) {
+        if (!collision(rotate(current_piece, 0))) {
+            current_piece = rotate(current_piece, 0)
+        }
+    } else if (event.keyCode == 32) {
+        while (!collision(move_down(current_piece))) {
+            current_piece.y++;
+        }
+        if (collision(current_piece)) {
+            game_over()
+        }
+        place_in_world(current_piece)
+        world.need_update = 1;
+    } 
+    else if (event.keyCode == 97) {current_piece = Object.assign({}, get_template(0))}
+    else if (event.keyCode == 98) {current_piece = Object.assign({}, get_template(1))}
+    else if (event.keyCode == 99) {current_piece = Object.assign({}, get_template(2))}
+    else if (event.keyCode == 100) {current_piece = Object.assign({}, get_template(3))}
+    else if (event.keyCode == 101) {current_piece = Object.assign({}, get_template(4))}
+    else if (event.keyCode == 102) {current_piece = Object.assign({}, get_template(5))}
+    else if (event.keyCode == 103) {current_piece = Object.assign({}, get_template(6))}
+    else {
+        console.log(event.keyCode, "was pressed")
+    }
+
+    draw_piece_texture(current_piece, tilemap.texture[3])
+}, true);
+
+var current_piece = Object.assign({}, get_template(0));
+var piece_texture;
+
+setInterval(update, 1000 / FPS);
+setTimeout(gametick_update, 1000 / gametick);
+
+function restart(){
+    world = new Init_world()
+    world.need_update = 1;
+}
+
+// function game_over(score){
+function game_over(){
+    console.log("game over !")
+    restart()
+}
+
+function gametick_update() {
+
+    
+
+    draw_piece_texture(current_piece, tilemap.texture[0])
+
+    if (collision(current_piece)) {
+        game_over()
+    }
+    if (!collision(move_down(current_piece))) {
+        current_piece.y++;
+    } else {
+
+        place_in_world(current_piece);
+        world.need_update = 1;
+    }
+    draw_piece_texture(current_piece, tilemap.texture[3])
+    setTimeout(gametick_update, 1000 / gametick);
+}
+
+function update() {
+    if (tilemap.init) {
+        draw_piece_texture(current_piece, tilemap.texture[3])
+    }
+    if (world.need_update == 1) {
+        world.calculate()
+        // world.grass();
+        // world.stone();
+        world.render();
+        text_display("yo", 0, 0)
+        world.need_update = 0;
+    }
+}
     </script>
 </body>
 </html>
