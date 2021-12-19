@@ -95,14 +95,13 @@ function Init_world() {
     this.calculate = function() {
         
         for (let x = 1; x < world.w; x++) {
-            
-            let shifted = 0;
-            let prev_depth = 0;
             let depth = 0;
             
             for (let y = 0; y < world.h; y++) {
+                
                 let pos = y * world.w + x;
                 let block = world.map[pos]
+                let shifted = false
 
                 if (block > BEDROCK) {
                     depth++;
@@ -117,19 +116,31 @@ function Init_world() {
                     (world.map[pos - world.w] == AIR || pos < world.w )) {
                     block = GRASS
                 }
-                
 
+                if (depth > 3 && block > BEDROCK){
+
+                    let [shift, block_under] = find_under(pos, depth)
                     
-                
-
+                        block = block_under
+                }
                 world.map[pos] = block
-                previous_depth = depth    
+                
             }
-            
-            // console.log("shifted:", shifted)
         }
-        // console.log("^^^^^^^^^^^^^\n\n\n\n")
     }
+}
+function find_under(pos, depth){
+    block = world.map[pos]
+    offset = world.w
+    under = world.map[pos + offset]
+    while (under != BEDROCK){
+        if (under > BEDROCK){
+            return [ false, under ]
+        }
+        offset += world.w
+        under = world.map[pos + offset]
+    }
+    return [ true , roll_ore(depth)]
 }
 
 function roll_ore(depth) {
